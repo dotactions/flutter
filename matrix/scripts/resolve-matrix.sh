@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Resolves the Flutter build matrix and build mode for the current event.
-# Single source of truth for valid targets and runner mapping: build-flutter/targets.json
+# Single source of truth for valid targets and runner mapping: build/targets.json
 set -euo pipefail
 
-TARGETS_FILE="${TARGETS_FILE:-${GITHUB_ACTION_PATH}/../build-flutter/targets.json}"
+TARGETS_FILE="${TARGETS_FILE:-${GITHUB_ACTION_PATH}/../build/targets.json}"
 
 TARGETS_JSON="${TARGETS_INPUT:-}"
 BUILD_MODE="${BUILD_MODE_INPUT:-}"
@@ -25,6 +25,13 @@ fi
 
 if ! echo "$TARGETS_JSON" | jq -e 'type == "array" and length > 0 and all(type == "string")' > /dev/null 2>&1; then
   echo "::error::Targets must be a non-empty JSON array of strings, got: $TARGETS_JSON"
+  exit 1
+fi
+
+# Duplicates would give two matrix jobs uploading the same artifact name, which upload-artifact rejects.
+DUPLICATES=$(echo "$TARGETS_JSON" | jq -c 'group_by(.) | map(select(length > 1) | .[0])')
+if [ "$DUPLICATES" != "[]" ]; then
+  echo "::error::Duplicate target(s): $DUPLICATES"
   exit 1
 fi
 

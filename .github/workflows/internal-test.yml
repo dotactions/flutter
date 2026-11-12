@@ -1,34 +1,36 @@
-name: Test Flutter Action
+name: Test Flutter Actions
 
 on:
   pull_request:
     paths:
-      - "build-flutter/**"
-      - "setup-flutter/**"
-      - "flutter-matrix/**"
-      - ".github/workflows/flutter-*.yml"
-      - ".github/workflows/internal-test-flutter.yml"
-      - "tests/fixtures/flutter/**"
+      - "build/**"
+      - "setup/**"
+      - "matrix/**"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/cd.yml"
+      - ".github/workflows/internal-test.yml"
+      - "tests/fixtures/**"
   push:
     branches: [main]
     paths:
-      - "build-flutter/**"
-      - "setup-flutter/**"
-      - "flutter-matrix/**"
-      - ".github/workflows/flutter-*.yml"
-      - ".github/workflows/internal-test-flutter.yml"
-      - "tests/fixtures/flutter/**"
+      - "build/**"
+      - "setup/**"
+      - "matrix/**"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/cd.yml"
+      - ".github/workflows/internal-test.yml"
+      - "tests/fixtures/**"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: test-flutter-${{ github.ref }}
+  group: internal-test-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  test-build-flutter:
+  test-build:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -40,50 +42,58 @@ jobs:
             expected-suffix: "-debug"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Test build-flutter (${{ matrix.build-mode }})
+      - name: Test build (${{ matrix.build-mode }})
         id: build-app
-        uses: ./build-flutter
+        uses: ./build
         with:
           target: "linux"
           build-mode: ${{ matrix.build-mode }}
-          working-directory: "tests/fixtures/flutter"
+          working-directory: "tests/fixtures"
       - name: Assert build artifacts and outputs
         shell: bash
         env:
           EXPECTED_NAME: "test_app-linux${{ matrix.expected-suffix }}"
+          ARTIFACT_NAME: ${{ steps.build-app.outputs.artifact-name }}
+          ARTIFACT_PATH: ${{ steps.build-app.outputs.artifact-path }}
         run: |
-          test -f "tests/fixtures/flutter/dist/${EXPECTED_NAME}.tar.gz"
-          tar -tzf "tests/fixtures/flutter/dist/${EXPECTED_NAME}.tar.gz" > /dev/null
-          if [ "${{ steps.build-app.outputs.artifact-name }}" != "$EXPECTED_NAME" ]; then
-            echo "Expected artifact-name '$EXPECTED_NAME', got '${{ steps.build-app.outputs.artifact-name }}'"
+          DIST_DIR="$RUNNER_TEMP/flutter-dist/linux"
+          test -f "$DIST_DIR/${EXPECTED_NAME}.tar.gz"
+          tar -tzf "$DIST_DIR/${EXPECTED_NAME}.tar.gz" > /dev/null
+          if [ "$ARTIFACT_NAME" != "$EXPECTED_NAME" ]; then
+            echo "Expected artifact-name '$EXPECTED_NAME', got '$ARTIFACT_NAME'"
             exit 1
           fi
-          if [ "${{ steps.build-app.outputs.artifact-path }}" != "tests/fixtures/flutter/dist/*" ]; then
-            echo "Expected artifact-path 'tests/fixtures/flutter/dist/*', got '${{ steps.build-app.outputs.artifact-path }}'"
+          if [ "$ARTIFACT_PATH" != "$DIST_DIR/*" ]; then
+            echo "Expected artifact-path '$DIST_DIR/*', got '$ARTIFACT_PATH'"
+            exit 1
+          fi
+          if [ -e tests/fixtures/dist ]; then
+            echo "Packaging must not write into the working directory"
             exit 1
           fi
 
-  test-setup-flutter-range:
+  test-setup-range:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Use a caret constraint in the fixture
         run: |
-          sed -i 's/^  flutter: .*/  flutter: ^3.47.1/' tests/fixtures/flutter/pubspec.yaml
-      - uses: ./setup-flutter
+          sed -i 's/^  flutter: [0-9].*/  flutter: ^3.47.1/' tests/fixtures/pubspec.yaml
+          grep -qx '  flutter: ^3.47.1' tests/fixtures/pubspec.yaml
+      - uses: ./setup
         with:
-          working-directory: "tests/fixtures/flutter"
+          working-directory: "tests/fixtures"
       - name: Assert lower bound was installed
         run: flutter --version | grep -F "Flutter 3.47.1 "
 
-  test-flutter-matrix:
+  test-matrix:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Resolve valid matrix
         id: valid
-        uses: ./flutter-matrix
+        uses: ./matrix
         with:
           targets: '["linux", "ios", "windows"]'
           build-mode: "profile"
@@ -107,7 +117,7 @@ jobs:
       - name: Resolve invalid matrix
         id: invalid
         continue-on-error: true
-        uses: ./flutter-matrix
+        uses: ./matrix
         with:
           targets: '["linux", "bogus"]'
 
@@ -120,3 +130,10 @@ jobs:
             echo "Expected invalid target to fail, got outcome '$OUTCOME'"
             exit 1
           fi
+
+  # Runs main's actions (ci.yml references them @main), so this covers the workflow's wiring, not this checkout's actions.
+  test-ci:
+    uses: ./.github/workflows/ci.yml
+    with:
+      targets: '["linux"]'
+      working-directory: "tests/fixtures"

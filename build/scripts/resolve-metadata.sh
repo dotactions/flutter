@@ -21,16 +21,26 @@ else
   MODE_SUFFIX="-${BUILD_MODE}"
 fi
 
-echo "BUILD_MODE=$BUILD_MODE" >> "$GITHUB_ENV"
-echo "MODE_SUFFIX=$MODE_SUFFIX" >> "$GITHUB_ENV"
-
 if [ ! -f pubspec.yaml ]; then
   echo "::error::pubspec.yaml not found in $PWD"
   exit 1
 fi
 
-NAME=$(sed -n "s/^name:[[:space:]]*//p" pubspec.yaml | head -n 1 | tr -d '\r"'\'' ')
+NAME=$(sed -n "s/^name:[[:space:]]*//p" pubspec.yaml | head -n 1 | tr -d '\r' | sed 's/[[:space:]]*#.*$//' | tr -d '"'\'' ')
 NAME="${NAME:-app}"
+# The name ends up in file and artifact names; Dart's own rule keeps it path-safe.
+if [[ ! "$NAME" =~ ^[a-z_][a-z0-9_]*$ ]]; then
+  echo "::error::Invalid pubspec.yaml name '$NAME': must match ^[a-z_][a-z0-9_]*\$"
+  exit 1
+fi
 
-echo "APP_NAME=$NAME" >> "$GITHUB_ENV"
-echo "app-name=$NAME" >> "$GITHUB_OUTPUT"
+# The action owns this directory, so a consumer's own dist/ is never packaged and repeated builds in one job don't mix.
+DIST_DIR="${RUNNER_TEMP:?}/flutter-dist/${TARGET}"
+rm -rf "$DIST_DIR"
+mkdir -p "$DIST_DIR"
+
+{
+  echo "app-name=$NAME"
+  echo "mode-suffix=$MODE_SUFFIX"
+  echo "dist-dir=$DIST_DIR"
+} >> "$GITHUB_OUTPUT"
