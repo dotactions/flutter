@@ -49,10 +49,14 @@ on:
         type: number
         default: 4
 
+permissions:
+  contents: read
+
 jobs:
   setup-matrix:
     name: Resolve Matrix
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       build-mode: ${{ steps.set-matrix.outputs.build-mode }}
@@ -60,7 +64,7 @@ jobs:
       - id: set-matrix
         # @main is rewritten to the exact release tag by internal-release.yml
         # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
-        uses: dotsem/actions/flutter-matrix@main
+        uses: dotactions/flutter/matrix@main
         with:
           targets: ${{ inputs.targets }}
           pr-targets: ${{ inputs.pr-targets }}
@@ -72,12 +76,13 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup Flutter
         # @main is rewritten to the exact release tag by internal-release.yml
         # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
-        uses: dotsem/actions/setup-flutter@main
+        uses: dotactions/flutter/setup@main
         with:
           flutter-version: ${{ inputs.flutter-version }}
           working-directory: ${{ inputs.working-directory }}
@@ -87,12 +92,13 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup Flutter
         # @main is rewritten to the exact release tag by internal-release.yml
         # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
-        uses: dotsem/actions/setup-flutter@main
+        uses: dotactions/flutter/setup@main
         with:
           flutter-version: ${{ inputs.flutter-version }}
           working-directory: ${{ inputs.working-directory }}
@@ -105,6 +111,7 @@ jobs:
     name: Build (${{ matrix.target }} - ${{ needs.setup-matrix.outputs.build-mode }})
     needs: [setup-matrix, analyze, test]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -115,7 +122,7 @@ jobs:
         id: build
         # @main is rewritten to the exact release tag by internal-release.yml
         # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
-        uses: dotsem/actions/build-flutter@main
+        uses: dotactions/flutter/build@main
         with:
           target: ${{ matrix.target }}
           flutter-version: ${{ inputs.flutter-version }}

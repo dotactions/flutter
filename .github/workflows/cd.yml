@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       tag:
-        description: "Release tag (optional, defaults to release event or ref)"
+        description: "Release tag (required unless triggered by a release or tag push)"
         required: false
         type: string
       flutter-version:
@@ -30,17 +30,35 @@ concurrency:
   group: flutter-cd-${{ inputs.tag || github.event.release.tag_name || github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   setup-matrix:
     name: Resolve Matrix
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
+      # Never fall back to a branch name: the upload action would create a release and tag named after it.
+      - name: Resolve release tag
+        id: tag
+        shell: bash
+        env:
+          TAG: ${{ inputs.tag || github.event.release.tag_name || (github.ref_type == 'tag' && github.ref_name) || '' }}
+        run: |
+          if [ -z "$TAG" ]; then
+            echo "::error::No release tag: pass the 'tag' input, or trigger on a release or tag push"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
       - id: set-matrix
         # @main is rewritten to the exact release tag by internal-release.yml
         # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
-        uses: dotsem/actions/flutter-matrix@main
+        uses: dotactions/flutter/matrix@main
         with:
           targets: ${{ inputs.targets }}
 
@@ -48,6 +66,7 @@ jobs:
     name: Build & Upload (${{ matrix.target }})
     needs: [setup-matrix]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     permissions:
       contents: write
     strategy:
@@ -60,7 +79,7 @@ jobs:
         id: build
         # @main is rewritten to the exact release tag by internal-release.yml
         # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
-        uses: dotsem/actions/build-flutter@main
+        uses: dotactions/flutter/build@main
         with:
           target: ${{ matrix.target }}
           flutter-version: ${{ inputs.flutter-version }}
@@ -71,5 +90,5 @@ jobs:
           repo_token: ${{ secrets.token || secrets.GITHUB_TOKEN }}
           file: ${{ steps.build.outputs.artifact-path }}
           file_glob: true
-          tag: ${{ inputs.tag || github.event.release.tag_name || github.ref_name }}
+          tag: ${{ needs.setup-matrix.outputs.tag }}
           overwrite: true
