@@ -1,0 +1,20 @@
+name: Lint Scripts
+
+on:
+  pull_request:
+    paths: &paths
+      - "**.sh"
+      - "**.ps1"
+      - ".tooling"
+      - ".github/workflows/internal-lint.yml"
+  push:
+    branches: [main]
+    paths: *paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    uses: dotactions/tooling/.github/workflows/lint.yml@47e8ca68959cee5ae7b65b8110f4cf7d0a89decd # v1.1.0

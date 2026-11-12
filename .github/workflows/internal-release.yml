@@ -1,0 +1,19 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 0.1.0, v0.1.0 or 0.1.0-rc.1)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    uses: dotactions/tooling/.github/workflows/release.yml@47e8ca68959cee5ae7b65b8110f4cf7d0a89decd # v1.1.0
+    with:
+      version: ${{ inputs.version }}
+    secrets: inherit
