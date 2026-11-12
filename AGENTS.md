@@ -62,7 +62,7 @@ Opinionated composite actions and reusable workflows for building and shipping F
 ## Testing
 
 - Composite actions are tested via `uses: ./<action>` in `internal-test.yml`, with assertions on outputs and produced files. Add or extend a test for every behavioural change.
-- Script logic is unit-tested in `tests/<name>.test.sh` using the harness from the `.tooling` submodule (`source "$(dirname "$0")/../.tooling/tests/lib.sh"`; run `git submodule update --init` first). `internal-test-scripts.yml` runs every one on ubuntu, macOS and Windows. Add cases for every branch you change.
+- Script logic is unit-tested in `tests/<name>.test.sh` using the harness from the `.tooling` submodule (`source "$(dirname "$0")/../.tooling/tests/lib.sh"`; run `git submodule update --init` first). Dependabot (`gitsubmodule`) bumps `.tooling` to tooling `main`; merge those PRs only when the script tests pass. `internal-test-scripts.yml` runs every one on ubuntu, macOS and Windows. Add cases for every branch you change.
 - Each `internal-*` workflow has a `paths:` filter. When adding files that a workflow should cover, update its filter.
 - Local checks before finishing (run whichever apply):
     - `shellcheck <changed .sh files>`
