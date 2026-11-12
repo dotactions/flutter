@@ -304,6 +304,9 @@ jobs:
 
 ## Releasing (maintainers)
 
-Merge to `main` with conventional-commit PR titles (they become the release notes), then run the **Release** workflow (`internal-release.yml`) from `main` with a version, e.g. `1.2.0` or `1.2.0-rc.1`. It pins self-references to the release tag, creates the GitHub release and moves the floating tags; see [dotactions/tooling](https://github.com/dotactions/tooling).
+1. Merge to `main` with conventional-commit PR titles; they become the release notes.
+2. Go to **Actions → Release → Run workflow** on `main` and enter a version: `0.2.0`, or `0.2.0-rc.1` for a pre-release that moves no floating tags.
+
+Don't use **Releases → Draft a new release**: it tags a plain `main` commit whose self-references still say `@main`, so the tag wouldn't pin the actions it runs, and it doesn't move the floating tags. The workflow (`internal-release.yml`, which calls [dotactions/tooling](https://github.com/dotactions/tooling)) does both, then creates the GitHub release with generated notes.
 
 Bump the **minor** version for breaking changes and the **patch** version for everything else (`0.x`).
