@@ -5,7 +5,8 @@ APP_NAME="${APP_NAME:-app}"
 BUILD_MODE="${BUILD_MODE:-release}"
 MODE_SUFFIX="${MODE_SUFFIX:-}"
 
-mkdir -p dist
+: "${DIST_DIR:?}"
+mkdir -p "$DIST_DIR"
 
 APP_PATH=""
 if [ -d "build/macos/Build/Products" ]; then
@@ -17,4 +18,4 @@ if [ -z "$APP_PATH" ]; then
   exit 1
 fi
 
-ditto -c -k --sequesterRsrc "$APP_PATH" "dist/${APP_NAME}-macos${MODE_SUFFIX}.zip"
+ditto -c -k --sequesterRsrc "$APP_PATH" "$DIST_DIR/${APP_NAME}-macos${MODE_SUFFIX}.zip"

@@ -4,11 +4,12 @@ set -euo pipefail
 APP_NAME="${APP_NAME:-app}"
 MODE_SUFFIX="${MODE_SUFFIX:-}"
 
-mkdir -p dist
+: "${DIST_DIR:?}"
+mkdir -p "$DIST_DIR"
 
 if [ ! -d "build/ios/iphoneos/Runner.app" ]; then
   echo "::error::ios Runner.app bundle not found"
   exit 1
 fi
 
-ditto -c -k --sequesterRsrc "build/ios/iphoneos/Runner.app" "dist/${APP_NAME}-ios-unsigned${MODE_SUFFIX}.zip"
+ditto -c -k --sequesterRsrc "build/ios/iphoneos/Runner.app" "$DIST_DIR/${APP_NAME}-ios-unsigned${MODE_SUFFIX}.zip"

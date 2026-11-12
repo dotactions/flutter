@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# shellcheck source=tests/lib.sh
-source "$(dirname "$0")/lib.sh"
+# shellcheck source=.tooling/tests/lib.sh
+source "$(dirname "$0")/../.tooling/tests/lib.sh"
 only_on linux macos windows
 
-SCRIPT="$REPO_ROOT/setup-flutter/scripts/resolve-version.sh"
+SCRIPT="$REPO_ROOT/setup/scripts/resolve-version.sh"
 ENV_HEAD='name: app\nenvironment:\n  sdk: ^3.13.1\n'
 DEPS='dependencies:\n  flutter:\n    sdk: flutter\nflutter:\n  uses-material-design: true\n'
 

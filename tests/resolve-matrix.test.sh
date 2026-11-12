@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# shellcheck source=tests/lib.sh
-source "$(dirname "$0")/lib.sh"
+# shellcheck source=.tooling/tests/lib.sh
+source "$(dirname "$0")/../.tooling/tests/lib.sh"
 only_on linux macos
 
-SCRIPT="$REPO_ROOT/flutter-matrix/scripts/resolve-matrix.sh"
-TARGETS_JSON_FILE="$REPO_ROOT/build-flutter/targets.json"
+SCRIPT="$REPO_ROOT/matrix/scripts/resolve-matrix.sh"
+TARGETS_JSON_FILE="$REPO_ROOT/build/targets.json"
 # The script finds targets.json relative to its own action, exactly as on a runner.
-ACTION_PATH="GITHUB_ACTION_PATH=$REPO_ROOT/flutter-matrix"
+ACTION_PATH="GITHUB_ACTION_PATH=$REPO_ROOT/matrix"
 
 resolve() {
   new_case
@@ -78,5 +78,8 @@ expect "every target maps to its targets.json runner, in input order" \
 
 resolve EVENT_NAME=push TARGETS_INPUT='["ios","linux"]'
 expect "input order is kept" '[{"target":"ios","os":"macos-latest"},{"target":"linux","os":"ubuntu-latest"}]' "$(output matrix)"
+
+resolve TARGETS_INPUT='["linux", "ios", "linux"]'
+expect_fail "rejects duplicate targets" 'Duplicate target(s): ["linux"]'
 
 finish

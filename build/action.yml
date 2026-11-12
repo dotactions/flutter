@@ -31,27 +31,12 @@ outputs:
     description: "Base name of packaged artifact"
     value: ${{ steps.package-meta.outputs.artifact-name }}
   artifact-path:
-    description: "Path or glob of packaged artifact(s)"
+    description: "Glob of the packaged artifact(s), in a directory under the runner temp folder"
     value: ${{ steps.package-meta.outputs.artifact-path }}
 
 runs:
   using: "composite"
   steps:
-    - name: Resolve Flutter version
-      id: version
-      shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      env:
-        FLUTTER_VERSION_INPUT: ${{ inputs.flutter-version }}
-      run: bash "${{ github.action_path }}/../setup-flutter/scripts/resolve-version.sh"
-
-    - name: Set up Flutter
-      uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
-      with:
-        flutter-version: ${{ steps.version.outputs.version }}
-        channel: ${{ inputs.channel }}
-        cache: ${{ inputs.cache == 'true' }}
-
     - name: Resolve App Metadata
       id: meta
       shell: bash
@@ -61,12 +46,27 @@ runs:
         BUILD_MODE: ${{ inputs.build-mode }}
       run: bash "${{ github.action_path }}/scripts/resolve-metadata.sh"
 
+    - name: Resolve Flutter version
+      id: version
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        FLUTTER_VERSION_INPUT: ${{ inputs.flutter-version }}
+      run: bash "${{ github.action_path }}/../setup/scripts/resolve-version.sh"
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+      with:
+        flutter-version: ${{ steps.version.outputs.version }}
+        channel: ${{ inputs.channel }}
+        cache: ${{ inputs.cache == 'true' }}
+
     - name: Install Linux dependencies
       if: inputs.target == 'linux'
       shell: bash
       run: |
         sudo apt-get update -qq
-        sudo apt-get install -y -qq libgtk-3-dev libblkid-dev liblzma-dev libglib2.0-dev
+        sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev libblkid-dev liblzma-dev libglib2.0-dev
 
     - name: Install Dart dependencies
       shell: bash
@@ -134,8 +134,9 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       env:
         BUILD_MODE: ${{ inputs.build-mode }}
-        APP_NAME: ${{ env.APP_NAME }}
-        MODE_SUFFIX: ${{ env.MODE_SUFFIX }}
+        APP_NAME: ${{ steps.meta.outputs.app-name }}
+        MODE_SUFFIX: ${{ steps.meta.outputs.mode-suffix }}
+        DIST_DIR: ${{ steps.meta.outputs.dist-dir }}
       run: bash "${{ github.action_path }}/scripts/package-linux.sh"
 
     - name: Package macOS
@@ -144,8 +145,9 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       env:
         BUILD_MODE: ${{ inputs.build-mode }}
-        APP_NAME: ${{ env.APP_NAME }}
-        MODE_SUFFIX: ${{ env.MODE_SUFFIX }}
+        APP_NAME: ${{ steps.meta.outputs.app-name }}
+        MODE_SUFFIX: ${{ steps.meta.outputs.mode-suffix }}
+        DIST_DIR: ${{ steps.meta.outputs.dist-dir }}
       run: bash "${{ github.action_path }}/scripts/package-macos.sh"
 
     - name: Package Windows
@@ -154,8 +156,9 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       env:
         BUILD_MODE: ${{ inputs.build-mode }}
-        APP_NAME: ${{ env.APP_NAME }}
-        MODE_SUFFIX: ${{ env.MODE_SUFFIX }}
+        APP_NAME: ${{ steps.meta.outputs.app-name }}
+        MODE_SUFFIX: ${{ steps.meta.outputs.mode-suffix }}
+        DIST_DIR: ${{ steps.meta.outputs.dist-dir }}
       run: pwsh "${{ github.action_path }}/scripts/package-windows.ps1"
 
     - name: Package Android
@@ -165,8 +168,9 @@ runs:
       env:
         TARGET: ${{ inputs.target }}
         BUILD_MODE: ${{ inputs.build-mode }}
-        APP_NAME: ${{ env.APP_NAME }}
-        MODE_SUFFIX: ${{ env.MODE_SUFFIX }}
+        APP_NAME: ${{ steps.meta.outputs.app-name }}
+        MODE_SUFFIX: ${{ steps.meta.outputs.mode-suffix }}
+        DIST_DIR: ${{ steps.meta.outputs.dist-dir }}
       run: bash "${{ github.action_path }}/scripts/package-android.sh"
 
     - name: Package iOS
@@ -174,8 +178,9 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       env:
-        APP_NAME: ${{ env.APP_NAME }}
-        MODE_SUFFIX: ${{ env.MODE_SUFFIX }}
+        APP_NAME: ${{ steps.meta.outputs.app-name }}
+        MODE_SUFFIX: ${{ steps.meta.outputs.mode-suffix }}
+        DIST_DIR: ${{ steps.meta.outputs.dist-dir }}
       run: bash "${{ github.action_path }}/scripts/package-ios.sh"
 
     - name: Set artifact outputs
@@ -184,5 +189,7 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       env:
         TARGET: ${{ inputs.target }}
-        WORKING_DIRECTORY: ${{ inputs.working-directory }}
+        APP_NAME: ${{ steps.meta.outputs.app-name }}
+        MODE_SUFFIX: ${{ steps.meta.outputs.mode-suffix }}
+        DIST_DIR: ${{ steps.meta.outputs.dist-dir }}
       run: bash "${{ github.action_path }}/scripts/set-artifact-outputs.sh"

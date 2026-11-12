@@ -1,35 +1,37 @@
-# Shared actions
+# dotactions/flutter
+
+Composite actions and reusable workflows to set up, test, build and package Flutter apps for Linux, macOS, Windows, Android and iOS.
 
 ## Versioning
 
-Pin a **full commit SHA** of a release tag (most secure, Semgrep standard), with the version in a comment:
+This repo is on **0.x** until release artifacts can be signed (see [Limitations](#limitations)). During `0.x`, a **minor** release may contain breaking changes.
+
+Pin the **full commit SHA** of a release tag, with the version in a comment, or a floating minor tag:
 
 ```yaml
-uses: dotsem/actions/.github/workflows/flutter-ci.yml@<40-char-sha> # v0.5.0
+uses: dotactions/flutter/.github/workflows/ci.yml@<40-char-sha> # v0.1.0
+uses: dotactions/flutter/.github/workflows/ci.yml@v0.1
 ```
 
-Or pin a **minor** tag (convenient, receives patch fixes):
+Resolve a SHA with `git ls-remote https://github.com/dotactions/flutter 'refs/tags/v0.1.0^{}'`. Only SHAs of **release tags** pin the whole tree; a SHA from `main` still contains `@main` self-references.
 
-```yaml
-uses: dotsem/actions/.github/workflows/flutter-ci.yml@v0.5
-```
+| Ref | Moves on | Use |
+| :-- | :-- | :-- |
+| `@<sha>` | never | **Recommended**: immutable, full reproducibility |
+| `@v0.1` | patch releases of `0.1` | **Recommended**: bug fixes, no breaking changes |
+| `@v0.1.0` | never (tag can be moved) | Readable, but tags are mutable |
+| `@v0` | every `0.x` release | Not recommended: during `0.x`, minor releases may break you |
 
-Resolve a SHA with `git ls-remote https://github.com/dotsem/actions 'refs/tags/v0.5.0^{}'`. Only SHAs of **release tags** pin the whole tree; a SHA from `main` still contains `@main` self-references.
+Release notes: [GitHub Releases](https://github.com/dotactions/flutter/releases).
 
-| Ref       | Moves on                 | Use                                                                       |
-| :-------- | :----------------------- | :------------------------------------------------------------------------ |
-| `@<sha>`  | never                    | **Recommended** (recommended by SemGrep): immutable, full reproducibility |
-| `@v0.5`   | patch releases of `0.5`  | **Recommended**: bug fixes, no breaking changes                           |
-| `@v0.5.0` | never (tag can be moved) | Readable, but tags are mutable                                            |
-| `@v0`     | every `0.x` release      | Not recommended: during `0.x`, minor releases may break you               |
+## Limitations
 
-Every release tag pins the **whole tree**. Reusable workflows and actions that call other actions in this repo get those references rewritten to the same release tag, so `flutter-ci.yml@v0.5.0` always runs `build-flutter@v0.5.0`. On `main`, self-references are `@main`.
-
-Release notes: [GitHub Releases](https://github.com/dotsem/actions/releases).
+- **Artifacts are unsigned.** iOS builds use `--no-codesign` and can't be installed. macOS apps are neither signed nor notarized, so Gatekeeper blocks them. Android release builds use your project's own signing config, which in the Flutter template is the debug key, so the Play Store rejects them. Windows executables aren't signed. v1.0.0 follows once signing is supported.
+- **Desktop builds are x64 only** (`ubuntu-latest`, `windows-latest`); arm64 runners aren't supported yet.
 
 ## Permissions
 
-Examples assume a **public** repository. In a **private** repository, `actions/checkout` needs `contents: read`, so every job using these actions (or `flutter-ci.yml`) must grant it:
+Examples assume a **public** repository. In a **private** repository, `actions/checkout` needs `contents: read`, so every job using these actions (or `ci.yml`) must grant it:
 
 ```yaml
 permissions:
@@ -40,99 +42,7 @@ Reusable workflows can only narrow the caller's token permissions, never widen t
 
 ## Actions
 
-### Setup Node & pnpm (`setup-node`)
-
-Configures PNPM, sets up the Node.js runtime, restores cached dependencies, and runs `pnpm install --frozen-lockfile`.
-
-> **Prerequisite**: Run `actions/checkout` before calling this action.
-
-#### Inputs
-
-| Name                    | Description                                                                                 | Required | Default |
-| :---------------------- | :------------------------------------------------------------------------------------------ | :------- | :------ |
-| `node-version`          | Target Node.js version                                                                      | No       | `"24"`  |
-| `pnpm-version`          | Specific PNPM version (empty string reads from `package.json`)                              | No       | `""`    |
-| `working-directory`     | Directory containing the target `package.json`                                              | No       | `"."`   |
-| `cache-dependency-path` | Explicit lockfile path for cache hashing (defaults to `<working-directory>/pnpm-lock.yaml`) | No       | `""`    |
-
-#### Usage
-
-```yaml
-- uses: dotsem/actions/setup-node@v0.5
-  with:
-      node-version: "24"
-      working-directory: "frontend"
-```
-
-### Build Node (`build-node`)
-
-Runs a production build command using PNPM in the specified directory.
-
-#### Inputs
-
-| Name                | Description                                               | Required | Default   |
-| :------------------ | :-------------------------------------------------------- | :------- | :-------- |
-| `working-directory` | Directory to execute the build command in                 | No       | `"."`     |
-| `script`            | Lifecycle script defined in package.json                  | No       | `"build"` |
-| `args`              | Additional CLI flags passed to the script (e.g. --filter) | No       | `""`      |
-
-#### Usage
-
-```yaml
-- uses: dotsem/actions/build-node@v0.5
-  with:
-      working-directory: "frontend"
-      script: "build"
-      args: "--filter=web"
-```
-
-### Security Report (`security-report`)
-
-Parses SARIF output, appends a detailed markdown summary with badge to the GitHub Actions Job Summary, upserts a sticky PR comment, and manages automated issue tracking.
-
-#### Permissions Required
-
-```yaml
-permissions:
-    contents: read
-    pull-requests: write # for sticky PR comments
-    issues: write # for automated issue management
-```
-
-#### Inputs
-
-| Name               | Description                                           | Required | Default                                              |
-| :----------------- | :---------------------------------------------------- | :------- | :--------------------------------------------------- |
-| `sarif-file`       | Path to SARIF output file                             | Yes      | -                                                    |
-| `title`            | Header title in report                                | No       | `"Security Scan Report"`                             |
-| `comment-tag`      | Identifier tag for sticky PR comments & issue markers | No       | `"security-report"`                                  |
-| `badge-label`      | Label text for shields.io badge                       | No       | `"Security"`                                         |
-| `github-token`     | Token with PR and issues write permissions            | No       | `${{ github.token }}`                                |
-| `fail-on-findings` | Fail step if findings are detected                    | No       | `"false"`                                            |
-| `manage-issue`     | Create/update/close tracked GitHub issue              | No       | `"false"`                                            |
-| `issue-title`      | Title of automated GitHub issue                       | No       | `"[Security Audit] Active Vulnerabilities Detected"` |
-
-#### Outputs
-
-| Name             | Description                                      |
-| :--------------- | :----------------------------------------------- |
-| `total-findings` | Total number of non-suppressed findings detected |
-| `report-file`    | Path to the generated Markdown report file       |
-
-#### Usage
-
-```yaml
-- name: Report Trivy Results
-  uses: dotsem/actions/security-report@v0.5
-  if: always() && hashFiles('trivy.sarif') != ''
-  with:
-      title: "Trivy Vulnerability Report"
-      sarif-file: "trivy.sarif"
-      comment-tag: "trivy"
-      fail-on-findings: "true"
-```
-
-### Build Flutter (`build-flutter`)
+### Build Flutter (`build`)
 
 Sets up Flutter, automatically resolves app metadata from `pubspec.yaml`, installs target dependencies, builds binaries in release, debug, or profile mode, and packages artifacts for Linux, macOS, Windows, Android (android-apk/android-aab), or iOS.
 
@@ -162,18 +72,18 @@ Sets up Flutter, automatically resolves app metadata from `pubspec.yaml`, instal
 | Name            | Description                                   |
 | :-------------- | :-------------------------------------------- |
 | `artifact-name` | Base name for the generated artifact          |
-| `artifact-path` | Path glob pointing to the packaged archive(s) |
+| `artifact-path` | Glob of the packaged archive(s), in a directory under the runner temp folder that the action owns |
 
 #### Usage
 
 ```yaml
 - name: Build Flutter App
-  uses: dotsem/actions/build-flutter@v0.5
+  uses: dotactions/flutter/build@v0.1
   with:
       target: "linux"
 ```
 
-### Setup Flutter (`setup-flutter`)
+### Setup Flutter (`setup`)
 
 Installs the Flutter SDK and runs `flutter pub get`.
 
@@ -199,13 +109,13 @@ Installs the Flutter SDK and runs `flutter pub get`.
 #### Usage
 
 ```yaml
-- uses: dotsem/actions/setup-flutter@v0.5
+- uses: dotactions/flutter/setup@v0.1
 - run: flutter analyze
 ```
 
-### Flutter Matrix (`flutter-matrix`)
+### Flutter Matrix (`matrix`)
 
-Validates Flutter targets and resolves a `strategy.matrix` (target + runner OS) and build mode for the current event. Used internally by `flutter-ci.yml` and `flutter-cd.yml`. The list of valid targets and their runners is defined in [`build-flutter/targets.json`](build-flutter/targets.json).
+Validates Flutter targets and resolves a `strategy.matrix` (target + runner OS) and build mode for the current event. Used internally by `ci.yml` and `cd.yml`. The list of valid targets and their runners is defined in [`build/targets.json`](build/targets.json).
 
 #### Inputs
 
@@ -218,7 +128,7 @@ Validates Flutter targets and resolves a `strategy.matrix` (target + runner OS) 
 | `pr-build-mode`   | Build mode on `pull_request` (falls back to `"debug"`)         | No       | `""`    |
 | `push-build-mode` | Build mode on push / other events (falls back to `"release"`)  | No       | `""`    |
 
-_Provide either `targets` or both `pr-targets` and `push-targets`._
+_Provide either `targets` or both `pr-targets` and `push-targets`. Duplicate targets are rejected._
 
 #### Outputs
 
@@ -237,7 +147,7 @@ jobs:
             matrix: ${{ steps.m.outputs.matrix }}
         steps:
             - id: m
-              uses: dotsem/actions/flutter-matrix@v0.5
+              uses: dotactions/flutter/matrix@v0.1
               with:
                   targets: '["linux", "windows"]'
     build:
@@ -248,81 +158,16 @@ jobs:
                 include: ${{ fromJson(needs.matrix.outputs.matrix) }}
         steps:
             - uses: actions/checkout@v7
-            - uses: dotsem/actions/build-flutter@v0.5
+            - uses: dotactions/flutter/build@v0.1
               with:
                   target: ${{ matrix.target }}
 ```
 
 ## Workflows
 
-### Trivy Security Audit (`trivy-audit.yml`)
+### Flutter CI (`ci.yml`)
 
-Runs Trivy vulnerability and misconfiguration scanning on the caller repository, parses findings, publishes sticky PR comments / job summaries via `security-report`, and optionally uploads SARIF artifacts.
-
-#### Permissions Required
-
-```yaml
-permissions:
-    contents: read
-    issues: write # PR comments + issue tracking
-    pull-requests: write # optional: only if you replace the issues API with the pulls API
-```
-
-#### Inputs
-
-| Name               | Description                                | Required | Default                  |
-| :----------------- | :----------------------------------------- | :------- | :----------------------- |
-| `scan-type`        | Trivy scan target type (e.g. `fs`)         | No       | `"fs"`                   |
-| `severity`         | Comma-separated severity levels to include | No       | `"CRITICAL,HIGH,MEDIUM"` |
-| `fail-on-findings` | Fail the workflow if findings are detected | No       | `false`                  |
-| `upload-artifact`  | Upload SARIF scan report as a job artifact | No       | `true`                   |
-| `manage-issue`     | Create/update/close tracked GitHub issue   | No       | `false`                  |
-
-#### Secrets
-
-| Name    | Description                                                  | Required |
-| :------ | :----------------------------------------------------------- | :------- |
-| `token` | GitHub token with pull-requests and issues write permissions | No       |
-
-#### Usage
-
-```yaml
-# .github/workflows/security.yml
-name: Security Audit
-
-on:
-    push:
-        branches: [main]
-        paths-ignore:
-            - "**.md"
-    pull_request:
-        branches: [main]
-        paths-ignore:
-            - "**.md"
-    schedule:
-        - cron: "0 4 * * 4" # weekly Thursday at 04:00 UTC
-    workflow_dispatch:
-
-concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
-
-jobs:
-    audit:
-        uses: dotsem/actions/.github/workflows/trivy-audit.yml@v0.5
-        permissions:
-            contents: read
-            pull-requests: write
-            issues: write
-        with:
-            severity: "CRITICAL,HIGH"
-            fail-on-findings: true
-            manage-issue: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
-```
-
-### Flutter CI (`flutter-ci.yml`)
-
-Runs Flutter static analysis, unit tests, and cross-platform compilation across a specified list of targets.
+Runs Flutter static analysis, unit tests, and cross-platform compilation across a specified list of targets. Builds start only after analysis and tests pass.
 
 #### Permissions Required
 
@@ -333,13 +178,13 @@ permissions:
 
 #### Flutter Version
 
-unless `flutter-version` is passed, the SDK version is read from `environment.flutter` in `<working-directory>/pubspec.yaml`. An exact version is recommended; a range (`^3.47.1`, `">=3.47.1 <4.0.0"`) installs its lower bound:
+Unless `flutter-version` is passed, the SDK version is read from `environment.flutter` in `<working-directory>/pubspec.yaml`. An exact version is recommended; a range (`^3.47.1`, `">=3.47.1 <4.0.0"`) installs its lower bound:
 
- ```yaml
- environment:
-     sdk: ^3.13.1
-     flutter: 3.47.1
- ```
+```yaml
+environment:
+    sdk: ^3.13.1
+    flutter: 3.47.1
+```
 
 #### Inputs
 
@@ -355,9 +200,9 @@ unless `flutter-version` is passed, the SDK version is read from `environment.fl
 | `push-build-mode`   | Build mode on push/merge (defaults to `"release"`)                          | No       | `""`**  |
 | `concurrency-tests` | Number of concurrent test runners                                           | No       | `4`     |
 
-*_You must provide either `targets` or both `pr-targets` and `push-targets`._
+\* Provide either `targets` or both `pr-targets` and `push-targets`.
 
-** _If none are provided. PR build-mode is `"debug"`, push build-mode is `"release"`._
+\*\* If none are provided, PR build mode is `"debug"` and push build mode is `"release"`.
 
 #### Usage
 
@@ -379,7 +224,7 @@ concurrency:
 
 jobs:
     ci:
-        uses: dotsem/actions/.github/workflows/flutter-ci.yml@v0.5
+        uses: dotactions/flutter/.github/workflows/ci.yml@v0.1
         with:
             pr-targets: '["android-apk"]'
             push-targets: '["android-aab", "windows"]'
@@ -392,7 +237,7 @@ jobs:
             # build-mode: 'release'
 ```
 
-### Flutter CD (`flutter-cd.yml`)
+### Flutter CD (`cd.yml`)
 
 Builds release packages across specified platforms and uploads them directly to a GitHub release.
 
@@ -405,20 +250,20 @@ permissions:
 
 #### Flutter Version
 
-unless `flutter-version` is passed, the SDK version is read from `environment.flutter` in `<working-directory>/pubspec.yaml`. An exact version is recommended; a range (`^3.47.1`, `">=3.47.1 <4.0.0"`) installs its lower bound:
+Unless `flutter-version` is passed, the SDK version is read from `environment.flutter` in `<working-directory>/pubspec.yaml`. An exact version is recommended; a range (`^3.47.1`, `">=3.47.1 <4.0.0"`) installs its lower bound:
 
- ```yaml
- environment:
-     sdk: ^3.13.1
-     flutter: 3.47.1
- ```
+```yaml
+environment:
+    sdk: ^3.13.1
+    flutter: 3.47.1
+```
 
 #### Inputs
 
 | Name                | Description                                                                 | Required | Default |
 | :------------------ | :-------------------------------------------------------------------------- | :------- | :------ |
 | `targets`           | JSON array of targets to build (e.g. `'["linux", "windows"]'`)              | Yes      | -       |
-| `tag`               | Target release tag (defaults to event tag or ref)                           | No       | `""`    |
+| `tag`               | Target release tag (required unless triggered by a release or tag push)     | No       | `""`    |
 | `flutter-version`   | Flutter SDK version (empty reads `environment.flutter` from `pubspec.yaml`) | No       | `""`    |
 | `working-directory` | Directory containing `pubspec.yaml`                                         | No       | `"."`   |
 
@@ -449,7 +294,7 @@ concurrency:
 
 jobs:
     cd:
-        uses: dotsem/actions/.github/workflows/flutter-cd.yml@v0.5
+        uses: dotactions/flutter/.github/workflows/cd.yml@v0.1
         permissions:
             contents: write
         with:
@@ -459,17 +304,6 @@ jobs:
 
 ## Releasing (maintainers)
 
-1. Merge to `main` with conventional-commit PR titles; these become the release notes.
-2. Run the **Release** workflow (`internal-release.yml`) from `main` with a version, e.g. `0.5.0` or `0.5.0-rc.1`.
-3. The workflow:
-    - rewrites every `dotsem/actions/...@main` self-reference to `@v<version>` in a detached release commit
-    - tags it `v<version>` and creates a GitHub release with generated notes
-    - moves `v0` and `v0.<minor>` to the new tag (skipped for pre-releases)
+Merge to `main` with conventional-commit PR titles (they become the release notes), then run the **Release** workflow (`internal-release.yml`) from `main` with a version, e.g. `1.2.0` or `1.2.0-rc.1`. It pins self-references to the release tag, creates the GitHub release and moves the floating tags; see [dotactions/tooling](https://github.com/dotactions/tooling).
 
-Authenticates as a GitHub App (short-lived token, scoped to this repo), because `GITHUB_TOKEN` can't push commits that modify `.github/workflows/`. Requires:
-
-- repository variable `RELEASE_APP_CLIENT_ID`: the app's Client ID
-- repository secret `RELEASE_APP_PRIVATE_KEY`: the app's private key
-- app repository permissions **Contents: read & write** and **Workflows: read & write**, installed on this repo only
-
-Bump the **minor** version for breaking changes and the **patch** version for everything else.
+Bump the **minor** version for breaking changes and the **patch** version for everything else (`0.x`).

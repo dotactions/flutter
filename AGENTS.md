@@ -55,7 +55,7 @@ Opinionated composite actions and reusable workflows for building and shipping F
 
 ## Public API & Versioning
 
-- Inputs, outputs, input defaults, artifact names and reusable-workflow `with:`/`secrets:` are public API. Renaming, removing or changing the default of any of them is a **breaking change**: flag it explicitly in your response so the human can bump the major version.
+- Inputs, outputs, input defaults, artifact names and reusable-workflow `with:`/`secrets:` are public API. Renaming, removing or changing the default of any of them is a **breaking change**: flag it explicitly in your response so the human can bump the minor version (during `0.x`).
 - Every public input/output change must be reflected in `README.md` (tables + usage examples).
 - Releases are cut only by the human via the `Release` workflow (`internal-release.yml`). Never create or move tags.
 
