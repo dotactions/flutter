@@ -17,16 +17,3 @@ updates:
       actions:
         patterns:
           - "*"
-
-
-  # .tooling test harness
-  - package-ecosystem: "gitsubmodule"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "04:00"
-      timezone: "UTC"
-    target-branch: "main"
-    commit-message:
-      prefix: "ci(tooling)"

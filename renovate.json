@@ -1,0 +1,14 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "enabledManagers": ["git-submodules"],
+  "git-submodules": { "enabled": true },
+  "packageRules": [
+    {
+      "description": "Only full release tags; skips the floating v1 / v0.x tags",
+      "matchManagers": ["git-submodules"],
+      "versioning": "semver",
+      "commitMessagePrefix": "ci(tooling):",
+      "minimumReleaseAge": null
+    }
+  ]
+}
