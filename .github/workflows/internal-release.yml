@@ -16,4 +16,5 @@ jobs:
     uses: dotactions/tooling/.github/workflows/release.yml@47e8ca68959cee5ae7b65b8110f4cf7d0a89decd # v1.1.0
     with:
       version: ${{ inputs.version }}
-    secrets: inherit
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}

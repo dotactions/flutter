@@ -2,7 +2,7 @@ version: 2
 updates:
   # GitHub Actions (auto-bump pinned commit SHAs)
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directories: ["/", "/build", "/matrix", "/setup"]
     schedule:
       interval: "daily"
       time: "04:00"
