@@ -1,4 +1,5 @@
 name: Release
+run-name: Release ${{ inputs.version }}
 
 on:
   workflow_dispatch:
@@ -13,7 +14,7 @@ permissions:
 
 jobs:
   release:
-    uses: dotactions/tooling/.github/workflows/release.yml@47e8ca68959cee5ae7b65b8110f4cf7d0a89decd # v1.1.0
+    uses: dotactions/tooling/.github/workflows/release.yml@1bfa08933d631ae3c3218f1362bed3660c4818b1 # v1.1.1
     with:
       version: ${{ inputs.version }}
     secrets:
