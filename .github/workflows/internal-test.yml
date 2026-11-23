@@ -165,7 +165,7 @@ jobs:
       targets: '["linux"]'
       working-directory: "tests/fixtures"
       coverage-report: true
-      # ponytail: ci.yml calls verify-generated@main, which doesn't exist before this lands; add `verify-generated: true` in a follow-up PR
+      verify-generated: true
 
   test-ci-coverage:
     needs: test-ci
