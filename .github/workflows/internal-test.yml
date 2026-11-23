@@ -143,3 +143,17 @@ jobs:
       targets: '["linux"]'
       working-directory: "tests/fixtures"
       coverage-report: true
+
+  test-ci-coverage:
+    needs: test-ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: flutter-coverage
+      - name: Assert coverage is filtered and repo-relative
+        run: |
+          grep -qx 'SF:tests/fixtures/lib/sign.dart' lcov.info
+          if grep -E '^SF:.*\.(g|freezed)\.dart$' lcov.info; then echo "Generated files not filtered"; exit 1; fi
+          if grep '^SF:' lcov.info | grep -v '^SF:tests/fixtures/'; then echo "Paths not repo-relative"; exit 1; fi
+          grep -q '^DA:[0-9]*,0$' lcov.info || { echo "Uncovered line missing"; exit 1; }

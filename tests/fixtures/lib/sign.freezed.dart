@@ -1,0 +1,1 @@
+int frozen() => 7;
