@@ -19,10 +19,10 @@ verify() {
 
 verify "up to date" ok ""
 expect "runs build_runner" "dart run build_runner build --delete-conflicting-outputs" "$(stub_log)"
-verify "stale tracked file" FAIL "echo new > a.g.dart" "build_runner changed the working tree"
+verify "stale tracked file" FAIL "echo new > a.g.dart" "Working tree has changes after build_runner"
 expect "lists the stale file" "yes" "$(grep -q 'a.g.dart' "$CASE_DIR/stdout" && echo yes)"
-verify "uncommitted new file" FAIL "echo x > b.freezed.dart" "build_runner changed the working tree"
-verify "deleted file" FAIL "rm a.g.dart" "build_runner changed the working tree"
+verify "uncommitted new file" FAIL "echo x > b.freezed.dart" "Working tree has changes after build_runner"
+verify "deleted file" FAIL "rm a.g.dart" "Working tree has changes after build_runner"
 verify "build_runner fails" FAIL "exit 1"
 
 new_case
