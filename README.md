@@ -169,12 +169,32 @@ jobs:
 
 Runs Flutter static analysis, unit tests, and cross-platform compilation across a specified list of targets. Builds start only after analysis and tests pass.
 
+With `coverage-report: true`, tests run with `--coverage`, the Test job uploads a `flutter-coverage` artifact (`lcov.info` with repo-relative paths), and a separate **Coverage report** job (the only job with write permissions, so the code under test never runs next to a write token) posts a coverage PR comment and `flutter` status via [getsentry/coverage-action](https://github.com/getsentry/coverage-action). The report is skipped on PRs from forks, whose token is read-only. Both checks are informational. Generated `*.g.dart` and `*.freezed.dart` files are always excluded.
+
+To tune the report further, add a Codecov-style `.github/coverage.yml` (or `.github/codecov.yml`) to your repository. coverage-action reads it from the checked-out repo:
+
+```yaml
+coverage:
+    ignore:
+        - "lib/generated/**"
+```
+
+> [!NOTE]
+> `ignore` does not filter source files yet: coverage-action currently applies it only to the search for coverage reports, so those files still count toward the percentage. Add the list now; it takes effect once coverage-action is fixed.
+
+Files that no test imports are missing from `lcov.info` entirely, which pushes the percentage up. To count them, add a test that imports every file under `lib/`.
+
 #### Permissions Required
 
 ```yaml
 permissions:
     contents: read # required on private repos; harmless on public
+    actions: read # coverage-action reads base-branch artifacts
+    pull-requests: write # coverage PR comment
+    statuses: write # coverage status
 ```
+
+GitHub checks these when the workflow starts, so they are required even with `coverage-report: false`.
 
 #### Flutter Version
 
@@ -199,6 +219,7 @@ environment:
 | `pr-build-mode`     | Build mode on pull request (defaults to `"debug"`)                          | No       | `""`**  |
 | `push-build-mode`   | Build mode on push/merge (defaults to `"release"`)                          | No       | `""`**  |
 | `concurrency-tests` | Number of concurrent test runners                                           | No       | `4`     |
+| `coverage-report`   | Post coverage PR comment and status                                         | No       | `false` |
 
 \* Provide either `targets` or both `pr-targets` and `push-targets`.
 
@@ -225,6 +246,11 @@ concurrency:
 jobs:
     ci:
         uses: dotactions/flutter/.github/workflows/ci.yml@v0.1
+        permissions:
+            contents: read
+            actions: read
+            pull-requests: write
+            statuses: write
         with:
             pr-targets: '["android-apk"]'
             push-targets: '["android-aab", "windows"]'
@@ -235,6 +261,8 @@ jobs:
             push-build-mode: "release"
             # or a build mode for all events:
             # build-mode: 'release'
+
+            # coverage-report: true
 ```
 
 ### Flutter CD (`cd.yml`)
