@@ -2,24 +2,18 @@ name: Test Flutter Actions
 
 on:
   pull_request:
-    paths:
+    paths: &paths
       - "build/**"
       - "setup/**"
       - "matrix/**"
+      - "verify-generated/**"
       - ".github/workflows/ci.yml"
       - ".github/workflows/cd.yml"
       - ".github/workflows/internal-test.yml"
       - "tests/fixtures/**"
   push:
     branches: [main]
-    paths:
-      - "build/**"
-      - "setup/**"
-      - "matrix/**"
-      - ".github/workflows/ci.yml"
-      - ".github/workflows/cd.yml"
-      - ".github/workflows/internal-test.yml"
-      - "tests/fixtures/**"
+    paths: *paths
   workflow_dispatch:
 
 permissions:
@@ -131,6 +125,34 @@ jobs:
             exit 1
           fi
 
+  test-verify-generated:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./setup
+        with:
+          working-directory: "tests/fixtures"
+      - name: Verify up-to-date fixture
+        uses: ./verify-generated
+        with:
+          working-directory: "tests/fixtures"
+      - name: Change the model without regenerating
+        run: sed -i 's/required int y/required int y, int? z/' tests/fixtures/lib/sign.dart && git -c user.name=ci -c user.email=ci@localhost commit -qam stale
+      - name: Verify stale fixture
+        id: stale
+        continue-on-error: true
+        uses: ./verify-generated
+        with:
+          working-directory: "tests/fixtures"
+      - name: Assert stale fixture failed
+        env:
+          OUTCOME: ${{ steps.stale.outcome }}
+        run: |
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "Expected stale generated files to fail, got outcome '$OUTCOME'"
+            exit 1
+          fi
+
   # Runs main's actions (ci.yml references them @main), so this covers the workflow's wiring, not this checkout's actions.
   test-ci:
     uses: ./.github/workflows/ci.yml
@@ -143,6 +165,7 @@ jobs:
       targets: '["linux"]'
       working-directory: "tests/fixtures"
       coverage-report: true
+      verify-generated: true
 
   test-ci-coverage:
     needs: test-ci

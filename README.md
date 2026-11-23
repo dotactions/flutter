@@ -113,6 +113,25 @@ Installs the Flutter SDK and runs `flutter pub get`.
 - run: flutter analyze
 ```
 
+### Verify Generated Files (`verify-generated`)
+
+Runs `dart run build_runner build --delete-conflicting-outputs` and fails if that modifies, adds or deletes any file under `working-directory`. This catches stale generated code (Freezed, json_serializable, ...) and generated files that were never committed.
+
+> **Prerequisite**: Run `actions/checkout`, `setup` and **any action that writes files** first. `build_runner` must be in `dev_dependencies`.
+
+#### Inputs
+
+| Name                | Description                         | Required | Default |
+| :------------------ | :---------------------------------- | :------- | :------ |
+| `working-directory` | Directory containing `pubspec.yaml` | No       | `"."`   |
+
+#### Usage
+
+```yaml
+- uses: dotactions/flutter/setup@v0.1
+- uses: dotactions/flutter/verify-generated@v0.1
+```
+
 ### Flutter Matrix (`matrix`)
 
 Validates Flutter targets and resolves a `strategy.matrix` (target + runner OS) and build mode for the current event. Used internally by `ci.yml` and `cd.yml`. The list of valid targets and their runners is defined in [`build/targets.json`](build/targets.json).
@@ -220,6 +239,7 @@ environment:
 | `push-build-mode`   | Build mode on push/merge (defaults to `"release"`)                          | No       | `""`**  |
 | `concurrency-tests` | Number of concurrent test runners                                           | No       | `4`     |
 | `coverage-report`   | Post coverage PR comment and status                                         | No       | `false` |
+| `verify-generated`  | Fail if `build_runner` output is stale or uncommitted                       | No       | `false` |
 
 \* Provide either `targets` or both `pr-targets` and `push-targets`.
 
@@ -263,6 +283,7 @@ jobs:
             # build-mode: 'release'
 
             # coverage-report: true
+            # verify-generated: true
 ```
 
 ### Flutter CD (`cd.yml`)
