@@ -53,6 +53,11 @@ on:
         required: false
         type: boolean
         default: false
+      verify-generated:
+        description: "Fail if build_runner output is stale or uncommitted"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -93,6 +98,13 @@ jobs:
           working-directory: ${{ inputs.working-directory }}
       - run: flutter analyze
         working-directory: ${{ inputs.working-directory }}
+      - name: Verify generated files
+        if: inputs.verify-generated
+        # @main is rewritten to the exact release tag by internal-release.yml
+        # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
+        uses: dotactions/flutter/verify-generated@main
+        with:
+          working-directory: ${{ inputs.working-directory }}
 
   test:
     name: Run Tests
