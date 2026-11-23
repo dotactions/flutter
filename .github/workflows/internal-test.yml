@@ -134,6 +134,12 @@ jobs:
   # Runs main's actions (ci.yml references them @main), so this covers the workflow's wiring, not this checkout's actions.
   test-ci:
     uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+      statuses: write
     with:
       targets: '["linux"]'
       working-directory: "tests/fixtures"
+      coverage-report: true
