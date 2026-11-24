@@ -23,8 +23,8 @@ if [ -z "$TARGETS_JSON" ]; then
   exit 1
 fi
 
-if ! echo "$TARGETS_JSON" | jq -e 'type == "array" and length > 0 and all(type == "string")' > /dev/null 2>&1; then
-  echo "::error::Targets must be a non-empty JSON array of strings, got: $TARGETS_JSON"
+if ! echo "$TARGETS_JSON" | jq -e 'type == "array" and all(type == "string")' > /dev/null 2>&1; then
+  echo "::error::Targets must be a JSON array of strings, got: $TARGETS_JSON"
   exit 1
 fi
 

@@ -147,7 +147,7 @@ Validates Flutter targets and resolves a `strategy.matrix` (target + runner OS) 
 | `pr-build-mode`   | Build mode on `pull_request` (falls back to `"debug"`)         | No       | `""`    |
 | `push-build-mode` | Build mode on push / other events (falls back to `"release"`)  | No       | `""`    |
 
-_Provide either `targets` or both `pr-targets` and `push-targets`. Duplicate targets are rejected._
+_Provide either `targets` or both `pr-targets` and `push-targets`. Duplicate targets are rejected. An empty array (`'[]'`) resolves to an empty matrix; guard the matrix job with `if: needs.<job>.outputs.matrix != '[]'`, since GitHub fails on an empty matrix._
 
 #### Outputs
 
@@ -241,7 +241,7 @@ environment:
 | `coverage-report`   | Post coverage PR comment and status                                         | No       | `false` |
 | `verify-generated`  | Fail if `build_runner` output is stale or uncommitted                       | No       | `false` |
 
-\* Provide either `targets` or both `pr-targets` and `push-targets`.
+\* Provide either `targets` or both `pr-targets` and `push-targets`. An empty array (`'[]'`) skips the build job for that event, e.g. `pr-targets: '[]'` runs only analyze and tests on pull requests.
 
 \*\* If none are provided, PR build mode is `"debug"` and push build mode is `"release"`.
 

@@ -40,10 +40,16 @@ expect_fail "push ignores pr-targets" "Must provide"
 resolve EVENT_NAME=push
 expect_fail "no targets" "Must provide"
 
-for bad in '"linux"' '[]' '[1]' '["linux", null]' '{"linux":1}' 'not json'; do
+for bad in '"linux"' '[1]' '["linux", null]' '{"linux":1}' 'not json'; do
   resolve EVENT_NAME=push TARGETS_INPUT="$bad"
-  expect_fail "rejects targets $bad" "non-empty JSON array of strings"
+  expect_fail "rejects targets $bad" "must be a JSON array of strings"
 done
+
+resolve EVENT_NAME=pull_request PR_TARGETS_INPUT='[]' PUSH_TARGETS_INPUT='["linux"]'
+expect "empty pr-targets skips builds on pull_request" "[]" "$(output matrix)"
+
+resolve EVENT_NAME=push TARGETS_INPUT='[]'
+expect "empty targets gives empty matrix" "[]" "$(output matrix)"
 
 resolve EVENT_NAME=push TARGETS_INPUT='["linux","bogus","nope"]'
 expect_fail "unknown targets are listed" '["bogus","nope"]'

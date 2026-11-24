@@ -190,6 +190,8 @@ jobs:
   build:
     name: Build (${{ matrix.target }} - ${{ needs.setup-matrix.outputs.build-mode }})
     needs: [setup-matrix, analyze, test]
+    # why: GitHub fails a run whose matrix has no entries, so `[]` must skip the job instead
+    if: needs.setup-matrix.outputs.matrix != '[]'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
