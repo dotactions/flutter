@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   release:
-    uses: dotactions/tooling/.github/workflows/release.yml@1bfa08933d631ae3c3218f1362bed3660c4818b1 # v1.1.1
+    uses: dotactions/tooling/.github/workflows/release.yml@195e9ff7bbf3476b7fd9a9e3d9c05554c3b37fb5 # v1.2.1
     with:
       version: ${{ inputs.version }}
     secrets:
