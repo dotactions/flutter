@@ -74,7 +74,7 @@ jobs:
       - id: set-matrix
         # @main is rewritten to the exact release tag by internal-release.yml
         # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
-        uses: dotactions/flutter/matrix@main
+        uses: dotactions/flutter/matrix@v0.4.1
         with:
           targets: ${{ inputs.targets }}
           pr-targets: ${{ inputs.pr-targets }}
@@ -92,7 +92,7 @@ jobs:
       - name: Setup Flutter
         # @main is rewritten to the exact release tag by internal-release.yml
         # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
-        uses: dotactions/flutter/setup@main
+        uses: dotactions/flutter/setup@v0.4.1
         with:
           flutter-version: ${{ inputs.flutter-version }}
           working-directory: ${{ inputs.working-directory }}
@@ -102,7 +102,7 @@ jobs:
         if: inputs.verify-generated
         # @main is rewritten to the exact release tag by internal-release.yml
         # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
-        uses: dotactions/flutter/verify-generated@main
+        uses: dotactions/flutter/verify-generated@v0.4.1
         with:
           working-directory: ${{ inputs.working-directory }}
 
@@ -115,7 +115,7 @@ jobs:
       - name: Setup Flutter
         # @main is rewritten to the exact release tag by internal-release.yml
         # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
-        uses: dotactions/flutter/setup@main
+        uses: dotactions/flutter/setup@v0.4.1
         with:
           flutter-version: ${{ inputs.flutter-version }}
           working-directory: ${{ inputs.working-directory }}
@@ -204,7 +204,7 @@ jobs:
         id: build
         # @main is rewritten to the exact release tag by internal-release.yml
         # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
-        uses: dotactions/flutter/build@main
+        uses: dotactions/flutter/build@v0.4.1
         with:
           target: ${{ matrix.target }}
           flutter-version: ${{ inputs.flutter-version }}
